@@ -6,6 +6,7 @@
 (async () => {
   const IMG_PATH = "https://it-crafts.github.io/lesson/img";
   const url = "https://my-json-server.typicode.com/it-crafts/lesson/timeline/";
+  let p = 1;
 
   const fetchApiData = async function(url, page = "info") {
     const res = await fetch(url + page);
@@ -31,7 +32,11 @@
       </div>
     `;
 
-  const infoData = await fetchApiData(url);
+  // 프로필 데이터와, 1P 데이터 API 동시 호출 하도록 개선
+  const [infoData, firstList] = await Promise.all([
+    fetchApiData(url),
+    fetchApiData(url, p++)
+  ]);
   const totalPage = infoData.totalPage * 1;
   const profileData = infoData.profile;
 
@@ -135,27 +140,10 @@
   let grid = article.children[0].firstElementChild;
   let loading = article.children[1].firstElementChild;
   let more = article.children[2].firstElementChild;
-  // 전체 보기 기능 추가를 위한, 더보기 버튼 선택
   let all = article.children[2].lastElementChild;
-  let p = 1;
 
-  const divide = function(list, size) {
-    const copy = list.slice();
-    const cnt = Math.floor(copy.length / size);
-    const listList = [];
-    for (let i = 0; i < cnt; i++) {
-      listList.push(copy.splice(0, size));
-    }
-    return listList;
-  };
-
-  // 사진 추가 기능 공통 사용을 위한 함수화
-  const addNextPageToTimeline = async () => {
-    // API 호출 시작 시, 더보기/전체보기 버튼 미표시 및 로딩 인디케이터 표시
-    more.parentElement.style.display = "none";
-    loading.parentElement.style.display = "";
-    const timelineList = await fetchApiData(url, p++);
-    const listList = divide(timelineList, 3);
+  // 렌더링 로직 분리
+  const renderTimeline = listList => {
     listList.forEach(list => {
       grid.insertAdjacentHTML(
         "beforeend",
@@ -180,28 +168,55 @@
         );
       });
     });
-    // 페이지에 따른 더보기/전체보기 버튼 표시 여부 조건분기 및 미표시하는 경우 이벤트리스너 제거
     if (p <= totalPage) {
       more.parentElement.style.display = "";
     } else {
       more.removeEventListener("click", clickMore);
       all.removeEventListener("click", clickAll);
     }
-    // API 호출 종료 후, 로딩 인티케이터 미표시
+  };
+
+  const divide = function(list, size) {
+    const copy = list.slice();
+    const cnt = Math.floor(copy.length / size);
+    const listList = [];
+    for (let i = 0; i < cnt; i++) {
+      listList.push(copy.splice(0, size));
+    }
+    return listList;
+  };
+
+  const addNextPageToTimeline = async (timelineList, isRequestAll) => {
+    more.parentElement.style.display = "none";
+    loading.parentElement.style.display = "";
+    // 접속 시, API 동시 호출을 위해 함수에 데이터 전달되었을 경우, API 호출하지 않고 해당 데이터 사용하도록 수정
+    if (timelineList === undefined) {
+      // 전체보기 요청일 경우, 마지막 페이지까지의 데이터를 순차적으로 요청 -> 이후에 한번에 렌더링
+      if (isRequestAll) {
+        timelineList = [];
+        for (; p <= totalPage; p++) {
+          timelineList.push(...(await fetchApiData(url, p)));
+        }
+      } // 더보기 요청일 경우, 다음 1페이지의 데이터만 요청
+      else {
+        timelineList = await fetchApiData(url, p++);
+      }
+    }
+    const listList = divide(timelineList, 3);
+    renderTimeline(listList);
     loading.parentElement.style.display = "none";
   };
 
-  addNextPageToTimeline();
+  // 최초 호출 시, 초기에 API 호출하여 응답받은 데이터 전달
+  addNextPageToTimeline(firstList);
 
-  const clickMore = function(e) {
+  const clickMore = function() {
     addNextPageToTimeline();
   };
 
-  // 전체보기 기능 추가
-  const clickAll = function(e) {
-    for (let i = p; i <= totalPage; i++) {
-      addNextPageToTimeline();
-    }
+  // 실행 순서를 보장할 수 없는 기존 방식의 문제점 개선 및 함수 내부에서 분기처리하도록 수정
+  const clickAll = function() {
+    addNextPageToTimeline(undefined, true);
   };
 
   more.addEventListener("click", clickMore);
