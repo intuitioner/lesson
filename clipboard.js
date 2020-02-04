@@ -223,6 +223,7 @@
     };
 
     const cancelSearch = $searchInput => {
+      $el.lastElementChild.firstElementChild.innerHTML = "";
       $searchInput.value = "";
       const listList = divide(timelineList, 3);
       items.render(listList);
