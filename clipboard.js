@@ -11,7 +11,6 @@
       const data = await res.json();
       return data.data;
     };
-    // Array.prototype에 myFilter 메소드 등록
     Array.prototype.myFilter = function(callback) {
       const result = [];
       for (let i = 0, length = this.length; i < length; i++) {
@@ -20,6 +19,18 @@
         }
       }
       return result;
+    };
+    // Array.prototype에 mySort 메소드 등록
+    Array.prototype.mySort = function(callback) {
+      for (let i = 0, length = this.length; i < length - 1; i++) {
+        if (callback(this[i], this[i + 1]) > 0) {
+          const temp = this[i];
+          this[i] = this[i + 1];
+          this[i + 1] = temp;
+          i = -1;
+        }
+      }
+      return this;
     };
     return { IMG_PATH, fetchApiData };
   })();
@@ -217,7 +228,6 @@
       if (e.target.value === "") {
         $searchCancelBtn.style.display = "none";
       }
-      // filter -> myFilter 메소드로 교체
       filterdList = timelineList.myFilter(item => {
         return (
           item.name.search(e.target.value) !== -1 ||
@@ -238,14 +248,16 @@
     const sort = mode => {
       $el.lastElementChild.firstElementChild.innerHTML = "";
       if (mode === "latest") {
-        filterdList.sort((x, y) => {
+        // sort -> mySort 메소드로 교체
+        filterdList.mySort((x, y) => {
           return Date.parse(y.timestamp) - Date.parse(x.timestamp);
         });
         const listList = divide(filterdList, 3);
         items.render(listList);
       } else if (mode === "popular") {
         const getEvalValue = item => item.clipCount + item.commentCount * 2;
-        filterdList.sort((x, y) => {
+        // sort -> mySort 메소드로 교체
+        filterdList.mySort((x, y) => {
           return getEvalValue(y) - getEvalValue(x);
         });
         const listList = divide(filterdList, 3);
