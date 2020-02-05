@@ -11,7 +11,16 @@
       const data = await res.json();
       return data.data;
     };
-
+    // Array.prototype에 myFilter 메소드 등록
+    Array.prototype.myFilter = function(callback) {
+      const result = [];
+      for (let i = 0, length = this.length; i < length; i++) {
+        if (callback(this[i])) {
+          result.push(this[i]);
+        }
+      }
+      return result;
+    };
     return { IMG_PATH, fetchApiData };
   })();
 
@@ -161,9 +170,7 @@
     let $el;
 
     let page = 1;
-    // 기준 데이터를 timelineList에 유지(정렬, 검색 등에 의해 변형하지 않음)
     let timelineList = await common.fetchApiData(url, page++);
-    // 정렬, 검색에 사용할 데이터, timelineList 값으로 초기화
     let filterdList = timelineList;
 
     const create = () => {
@@ -210,7 +217,8 @@
       if (e.target.value === "") {
         $searchCancelBtn.style.display = "none";
       }
-      filterdList = timelineList.filter(item => {
+      // filter -> myFilter 메소드로 교체
+      filterdList = timelineList.myFilter(item => {
         return (
           item.name.search(e.target.value) !== -1 ||
           item.text.search(e.target.value) !== -1
