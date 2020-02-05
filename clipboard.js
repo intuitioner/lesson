@@ -161,22 +161,22 @@
     let $el;
 
     let page = 1;
+    // 기준 데이터를 timelineList에 유지(정렬, 검색 등에 의해 변형하지 않음)
     let timelineList = await common.fetchApiData(url, page++);
+    // 정렬, 검색에 사용할 데이터, timelineList 값으로 초기화
+    let filterdList = timelineList;
 
     const create = () => {
       render();
-      // 최신순, 인기순 버튼 셀렉트
       const [
         $latestBtn,
         $popularBtn
       ] = $parent.lastElementChild.firstElementChild.getElementsByTagName(
         "button"
       );
-      // 검색 인풋 셀렉트
       const $searchInput = $parent.getElementsByTagName("input")[0];
-      // 검색 취소 버튼 셀렉트
       const $searchCancelBtn = document.getElementById("searchCancelBtn");
-      // 이벤트 리스너 추가
+
       $latestBtn.addEventListener("click", () => {
         sort("latest");
       });
@@ -196,7 +196,6 @@
 
     const divide = (list, size) => {
       const copy = list.slice();
-      // 마지막 Line의 사진의 수량이 1개 이거나 2개인 경우에도 버리지 않고 포함하도록 수정(검색 시 문제가 있음)
       const cnt = Math.ceil(copy.length / size);
       const listList = [];
       for (let i = 0; i < cnt; i++) {
@@ -206,13 +205,12 @@
     };
     const listList = divide(timelineList, 3);
 
-    // 검색창 input에 key이벤트 발생 시, 검색하여 재렌더링 수행 함수
     const filter = (e, $searchCancelBtn) => {
       $el.lastElementChild.firstElementChild.innerHTML = "";
       if (e.target.value === "") {
         $searchCancelBtn.style.display = "none";
       }
-      const filterdList = timelineList.filter(item => {
+      filterdList = timelineList.filter(item => {
         return (
           item.name.search(e.target.value) !== -1 ||
           item.text.search(e.target.value) !== -1
@@ -229,21 +227,20 @@
       items.render(listList);
     };
 
-    // 최신순, 인기순 버튼 클릭 시, 정렬하여 재렌더링 수행 함수
     const sort = mode => {
       $el.lastElementChild.firstElementChild.innerHTML = "";
       if (mode === "latest") {
-        timelineList.sort((x, y) => {
+        filterdList.sort((x, y) => {
           return Date.parse(y.timestamp) - Date.parse(x.timestamp);
         });
-        const listList = divide(timelineList, 3);
+        const listList = divide(filterdList, 3);
         items.render(listList);
       } else if (mode === "popular") {
         const getEvalValue = item => item.clipCount + item.commentCount * 2;
-        timelineList.sort((x, y) => {
+        filterdList.sort((x, y) => {
           return getEvalValue(y) - getEvalValue(x);
         });
-        const listList = divide(timelineList, 3);
+        const listList = divide(filterdList, 3);
         items.render(listList);
       }
     };
@@ -291,7 +288,6 @@
     return { $el, listList };
   })(timelineContent.$el.firstElementChild, timeline.url);
 
-  // 그리드 영역 내 아이템 부분 객체 생성
   const items = (($parent, listList) => {
     let $el;
     const create = () => {
@@ -318,7 +314,7 @@
                                 `;
             return html;
           }, "");
-          // 마지막 Line의 사진 수량이 1개이거나 2개인 경우, 빈 사진 추가하여 UI 문제점 해결
+
           const rest = list.length % 3;
           if (rest === 1) {
             html += `<div class="_bz0w"></div><div class="_bz0w"></div>`;
