@@ -179,10 +179,19 @@
 
   const grid = await (async ($parent, url) => {
     let $el;
-
+    const getEvalValue = item => item.clipCount + item.commentCount * 2;
     let page = 1;
-    let timelineList = await common.fetchApiData(url, page++);
-    let filterdList = timelineList;
+    // 초기 리스트 최신순 정렬 데이터 저장(API가 최신순 정렬된 데이터 반환)
+    const timelineList = await common.fetchApiData(url, page++);
+    // filterdList 얕은 복사로 변경
+    let filterdList = [...timelineList];
+    // 초기 리스트 인기순 정렬 데이터 저장
+    const popularList = filterdList.mySort((x, y) => {
+      return getEvalValue(y) - getEvalValue(x);
+    });
+
+    // 정렬 상태 변수 초기화
+    let mode = "latest";
 
     const create = () => {
       render();
@@ -195,11 +204,15 @@
       const $searchInput = $parent.getElementsByTagName("input")[0];
       const $searchCancelBtn = document.getElementById("searchCancelBtn");
 
+      // 최신순 버튼 클릭 시, 정렬 상태 저장
       $latestBtn.addEventListener("click", () => {
         sort("latest");
+        mode = "latest";
       });
+      // 인기순 버튼 클릭 시, 정렬 상태 저장
       $popularBtn.addEventListener("click", () => {
         sort("popular");
+        mode = "popular";
       });
       $searchInput.addEventListener("keyup", e => {
         $searchCancelBtn.style.display = "";
@@ -238,25 +251,30 @@
       items.render(listList);
     };
 
+    // 검색취소 기능 Bugfix(검색 취소 시, 최신순/인기순 유지하지 않음 & 검색 취소 후 최신순/인기순 클릭 시 빈화면 나타나는 경우 개선)
     const cancelSearch = $searchInput => {
       $el.lastElementChild.firstElementChild.innerHTML = "";
       $searchInput.value = "";
-      const listList = divide(timelineList, 3);
-      items.render(listList);
+      if (mode === "popular") {
+        filterdList = [...popularList];
+        const listList = divide(popularList, 3);
+        items.render(listList);
+      } else {
+        filterdList = [...timelineList];
+        const listList = divide(timelineList, 3);
+        items.render(listList);
+      }
     };
 
     const sort = mode => {
       $el.lastElementChild.firstElementChild.innerHTML = "";
       if (mode === "latest") {
-        // sort -> mySort 메소드로 교체
         filterdList.mySort((x, y) => {
           return Date.parse(y.timestamp) - Date.parse(x.timestamp);
         });
         const listList = divide(filterdList, 3);
         items.render(listList);
       } else if (mode === "popular") {
-        const getEvalValue = item => item.clipCount + item.commentCount * 2;
-        // sort -> mySort 메소드로 교체
         filterdList.mySort((x, y) => {
           return getEvalValue(y) - getEvalValue(x);
         });
