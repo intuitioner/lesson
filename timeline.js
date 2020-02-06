@@ -32,7 +32,6 @@
       </div>
     `;
 
-  // 프로필 데이터와, 1P 데이터 API 동시 호출 하도록 개선
   const [infoData, firstList] = await Promise.all([
     fetchApiData(url),
     fetchApiData(url, p++)
@@ -142,7 +141,6 @@
   let more = article.children[2].firstElementChild;
   let all = article.children[2].lastElementChild;
 
-  // 렌더링 로직 분리
   const renderTimeline = listList => {
     listList.forEach(list => {
       grid.insertAdjacentHTML(
@@ -168,14 +166,6 @@
         );
       });
     });
-    /* FIXME 함수명인 renderTimeline와는 전혀 관계없는 로직이 함께 들어와 있습니다
-    이름에 맞는 역할만 부여하여, 로직의 응집도를 높여주세요 */
-    if (p <= totalPage) {
-      more.parentElement.style.display = "";
-    } else {
-      more.removeEventListener("click", clickMore);
-      all.removeEventListener("click", clickAll);
-    }
   };
 
   const divide = function(list, size) {
@@ -188,44 +178,62 @@
     return listList;
   };
 
-  /* FIXME if문은 예외로직을 처리하는데 사용하고, 주요로직 자체를 다중 if-else로 둘러싸서 잡는 구조는 지양해주세요
-  특정 플래그로 내부로직을 분기하는 구조도, 아주 조금의 예외적인 로직이 아니라 주요 로직이 분기될 정도면 지양해주세요
-  이런 스타일로 다형성을 구현하면 유지보수 하기 어렵고 사이드이펙트가 발생하기 쉬운 코드가 됩니다 */
-  const addNextPageToTimeline = async (timelineList, isRequestAll) => {
+  // renderTimeline 전처리 로직 함수로 분리
+  const beforeRenderTimeline = () => {
     more.parentElement.style.display = "none";
     loading.parentElement.style.display = "";
-    // 접속 시, API 동시 호출을 위해 함수에 데이터 전달되었을 경우, API 호출하지 않고 해당 데이터 사용하도록 수정
-    if (timelineList === undefined) {
-      // 전체보기 요청일 경우, 마지막 페이지까지의 데이터를 순차적으로 요청 -> 이후에 한번에 렌더링
-      if (isRequestAll) {
-        timelineList = [];
-        // COMMENT 로직이 의미하는 바는 while이 조금 더 가독성이 좋을 것 같습니다
-        for (; p <= totalPage; p++) {
-          timelineList.push(...(await fetchApiData(url, p)));
-        }
-      } // 더보기 요청일 경우, 다음 1페이지의 데이터만 요청
-      else {
-        timelineList = await fetchApiData(url, p++);
-      }
-    }
-    const listList = divide(timelineList, 3);
-    renderTimeline(listList);
-    loading.parentElement.style.display = "none";
   };
 
-  // 최초 호출 시, 초기에 API 호출하여 응답받은 데이터 전달
-  addNextPageToTimeline(firstList);
+  // renderTimeline 후처리 로직 함수로 분리
+  const afterRenderTimeline = () => {
+    loading.parentElement.style.display = "none";
+    if (p <= totalPage) {
+      more.parentElement.style.display = "";
+    } else {
+      more.removeEventListener("click", clickMore);
+      all.removeEventListener("click", clickAll);
+    }
+  };
+
+  // 최초 렌더링 함수 분리
+  const firstRenderTimeline = () => {
+    beforeRenderTimeline();
+    const listList = divide(firstList, 3);
+    renderTimeline(listList);
+    afterRenderTimeline();
+  };
+
+  // 더보기 함수 분리
+  const addNextPageToTimeline = async () => {
+    beforeRenderTimeline();
+    const fetchedList = await fetchApiData(url, p++);
+    const listList = divide(fetchedList, 3);
+    renderTimeline(listList);
+    afterRenderTimeline();
+  };
+
+  // 전체보기 함수 분리
+  const addAllPageToTimeline = async () => {
+    beforeRenderTimeline();
+    const fetchedList = [];
+    // for문 -> while 문으로 수정
+    while (p <= totalPage) {
+      fetchedList.push(...(await fetchApiData(url, p++)));
+    }
+    const listList = divide(fetchedList, 3);
+    renderTimeline(listList);
+    afterRenderTimeline();
+  };
 
   const clickMore = function() {
     addNextPageToTimeline();
   };
-
-  // 실행 순서를 보장할 수 없는 기존 방식의 문제점 개선 및 함수 내부에서 분기처리하도록 수정
+  // 버튼 클릭 시 실행 함수 변경
   const clickAll = function() {
-    // TODO 명시적으로 던지는 빈값은 null이 바람직합니다
-    addNextPageToTimeline(undefined, true);
+    addAllPageToTimeline();
   };
 
+  firstRenderTimeline();
   more.addEventListener("click", clickMore);
   all.addEventListener("click", clickAll);
 })();
