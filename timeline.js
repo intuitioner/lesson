@@ -168,6 +168,8 @@
         );
       });
     });
+    /* FIXME 함수명인 renderTimeline와는 전혀 관계없는 로직이 함께 들어와 있습니다
+    이름에 맞는 역할만 부여하여, 로직의 응집도를 높여주세요 */
     if (p <= totalPage) {
       more.parentElement.style.display = "";
     } else {
@@ -186,6 +188,9 @@
     return listList;
   };
 
+  /* FIXME if문은 예외로직을 처리하는데 사용하고, 주요로직 자체를 다중 if-else로 둘러싸서 잡는 구조는 지양해주세요
+  특정 플래그로 내부로직을 분기하는 구조도, 아주 조금의 예외적인 로직이 아니라 주요 로직이 분기될 정도면 지양해주세요
+  이런 스타일로 다형성을 구현하면 유지보수 하기 어렵고 사이드이펙트가 발생하기 쉬운 코드가 됩니다 */
   const addNextPageToTimeline = async (timelineList, isRequestAll) => {
     more.parentElement.style.display = "none";
     loading.parentElement.style.display = "";
@@ -194,6 +199,7 @@
       // 전체보기 요청일 경우, 마지막 페이지까지의 데이터를 순차적으로 요청 -> 이후에 한번에 렌더링
       if (isRequestAll) {
         timelineList = [];
+        // COMMENT 로직이 의미하는 바는 while이 조금 더 가독성이 좋을 것 같습니다
         for (; p <= totalPage; p++) {
           timelineList.push(...(await fetchApiData(url, p)));
         }
@@ -216,6 +222,7 @@
 
   // 실행 순서를 보장할 수 없는 기존 방식의 문제점 개선 및 함수 내부에서 분기처리하도록 수정
   const clickAll = function() {
+    // TODO 명시적으로 던지는 빈값은 null이 바람직합니다
     addNextPageToTimeline(undefined, true);
   };
 
