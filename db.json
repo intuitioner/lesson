@@ -5,7 +5,7 @@
       "data": {
         "pageSize": "12",
         "totalPage": "3",
-        "totalCount": "33",
+        "totalCount": "34",
         "profile": {
           "name": "twicetagram",
           "img": "/profile.jpg",
@@ -293,6 +293,14 @@
           "clipCount": "227",
           "commentCount": "1",
           "timestamp": "2020/01/28 22:27:21"
+        },
+        {
+          "img": "/34.jpg",
+          "name": "트둥이들, 펭수",
+          "text": "펭수를 안고있는 트둥이들",
+          "clipCount": "999",
+          "commentCount": "99",
+          "timestamp": "2020/01/27 22:41:05"
         }
       ]
     }
@@ -301,13 +309,7 @@
     {
       "id": "1",
       "data": {
-        "imgList": [
-          "/01.jpg",
-          "/02.jpg",
-          "/03.jpg",
-          "/04.jpg",
-          "/05.jpg"
-        ],
+        "imgList": ["/01.jpg", "/02.jpg", "/03.jpg", "/04.jpg", "/05.jpg"],
         "name": "상품명1",
         "text": "상품설명1",
         "clipCount": "999",
