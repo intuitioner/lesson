@@ -141,36 +141,44 @@
   let more = article.children[2].firstElementChild;
   let all = article.children[2].lastElementChild;
 
+  // renderTimeline 함수 개선(1line에 3개 미만의 사진이 표시될 경우, 나머지 공간을 빈 div로 채움)
   const renderTimeline = listList => {
     listList.forEach(list => {
+      let html = list.reduce((html, data) => {
+        html += `
+                <div class="v1Nh3 kIKUG _bz0w">
+                    <a href="javascript:;">
+                        <div class="eLAPa">
+                            <div class="KL4Bh"><img class="FFVAD" decoding="auto" src="${IMG_PATH}${data.img}" style="object-fit: cover;"></div>
+                        </div>
+                    </a>
+                </div>
+                `;
+        return html;
+      }, "");
+
+      const rest = list.length % 3;
+      if (rest === 1) {
+        html += `<div class="_bz0w"></div><div class="_bz0w"></div>`;
+      } else if (rest === 2) {
+        html += `<div class="_bz0w"></div>`;
+      }
+
       grid.insertAdjacentHTML(
         "beforeend",
         `
-              <div class="Nnq7C weEfm">
-              </div>
-          `
+          <div class="Nnq7C weEfm">
+              ${html}
+          </div>
+        `
       );
-      let row = grid.lastElementChild;
-      list.forEach(data => {
-        row.insertAdjacentHTML(
-          "beforeend",
-          `
-              <div class="v1Nh3 kIKUG _bz0w">
-                  <a href="javascript:;">
-                      <div class="eLAPa">
-                          <div class="KL4Bh"><img class="FFVAD" decoding="auto" src="${IMG_PATH}${data.img}" style="object-fit: cover;"></div>
-                      </div>
-                  </a>
-              </div>
-              `
-        );
-      });
     });
   };
 
-  const divide = function(list, size) {
+  // divide 함수 개선(size로 나누어서 나누어떨어지지 않으면 버림 -> 유지)
+  const divide = (list, size) => {
     const copy = list.slice();
-    const cnt = Math.floor(copy.length / size);
+    const cnt = Math.ceil(copy.length / size);
     const listList = [];
     for (let i = 0; i < cnt; i++) {
       listList.push(copy.splice(0, size));
@@ -178,13 +186,11 @@
     return listList;
   };
 
-  // renderTimeline 전처리 로직 함수로 분리
   const beforeRenderTimeline = () => {
     more.parentElement.style.display = "none";
     loading.parentElement.style.display = "";
   };
 
-  // renderTimeline 후처리 로직 함수로 분리
   const afterRenderTimeline = () => {
     loading.parentElement.style.display = "none";
     if (p <= totalPage) {
@@ -195,7 +201,6 @@
     }
   };
 
-  // 최초 렌더링 함수 분리
   const firstRenderTimeline = () => {
     beforeRenderTimeline();
     const listList = divide(firstList, 3);
@@ -203,7 +208,6 @@
     afterRenderTimeline();
   };
 
-  // 더보기 함수 분리
   const addNextPageToTimeline = async () => {
     beforeRenderTimeline();
     const fetchedList = await fetchApiData(url, p++);
@@ -212,11 +216,9 @@
     afterRenderTimeline();
   };
 
-  // 전체보기 함수 분리
   const addAllPageToTimeline = async () => {
     beforeRenderTimeline();
     const fetchedList = [];
-    // for문 -> while 문으로 수정
     while (p <= totalPage) {
       fetchedList.push(...(await fetchApiData(url, p++)));
     }
@@ -228,7 +230,7 @@
   const clickMore = function() {
     addNextPageToTimeline();
   };
-  // 버튼 클릭 시 실행 함수 변경
+
   const clickAll = function() {
     addAllPageToTimeline();
   };
