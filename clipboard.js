@@ -181,11 +181,9 @@
     let $el;
     const getEvalValue = item => item.clipCount + item.commentCount * 2;
     let page = 1;
-    // 초기 리스트 최신순 정렬 데이터 저장(API가 최신순 정렬된 데이터 반환)
+
     const timelineList = await common.fetchApiData(url, page++);
-    // filterdList 얕은 복사로 변경
     let filterdList = [...timelineList];
-    // 초기 리스트 인기순 정렬 데이터 저장
     const popularList = filterdList.mySort((x, y) => {
       return getEvalValue(y) - getEvalValue(x);
     });
@@ -236,22 +234,21 @@
     };
     const listList = divide(timelineList, 3);
 
+    // 불필요 코드 제거 & 검색 시 기존 최신순/인기순 선택 상태 반영되지 않는 점 개선
     const filter = (e, $searchCancelBtn) => {
       $el.lastElementChild.firstElementChild.innerHTML = "";
-      if (e.target.value === "") {
-        $searchCancelBtn.style.display = "none";
-      }
-      filterdList = timelineList.myFilter(item => {
-        return (
-          item.name.search(e.target.value) !== -1 ||
-          item.text.search(e.target.value) !== -1
-        );
-      });
+      filterdList = (mode === "popular" ? popularList : timelineList).myFilter(
+        item => {
+          return (
+            item.name.search(e.target.value) !== -1 ||
+            item.text.search(e.target.value) !== -1
+          );
+        }
+      );
       const listList = divide(filterdList, 3);
       items.render(listList);
     };
 
-    // 검색취소 기능 Bugfix(검색 취소 시, 최신순/인기순 유지하지 않음 & 검색 취소 후 최신순/인기순 클릭 시 빈화면 나타나는 경우 개선)
     const cancelSearch = $searchInput => {
       $el.lastElementChild.firstElementChild.innerHTML = "";
       $searchInput.value = "";
