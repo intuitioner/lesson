@@ -227,15 +227,7 @@
     afterRenderTimeline();
   };
 
-  const clickMore = function() {
-    addNextPageToTimeline();
-  };
-
-  const clickAll = function() {
-    addAllPageToTimeline();
-  };
-
   firstRenderTimeline();
-  more.addEventListener("click", clickMore);
-  all.addEventListener("click", clickAll);
+  more.addEventListener("click", addNextPageToTimeline);
+  all.addEventListener("click", addAllPageToTimeline);
 })();
