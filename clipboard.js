@@ -187,6 +187,10 @@
       return getEvalValue(y) - getEvalValue(x);
     });
 
+    /* HACK 이런 로직을 분기하는 플래그성 상태변수 절대 사용하지 마세요
+    이 변수 하나 때문에, 전체 구조를 처음부터 새로 잡아야 할 만큼 코드가 더러워졌습니다
+    로직이 하나도 격리가 안 되고, 가독성/유지보수성도 떨어지고, 영향범위를 넓히는 취약한 코드입니다
+    짤 때야 플래그 하나로 술술 풀리니까 편하겠지만, 이후 두고두고 괴롭히는 트로이목마 변수입니다 */
     // 정렬 상태 변수 초기화
     let mode = "latest";
 
@@ -236,6 +240,7 @@
     // 불필요 코드 제거 & 검색 시 기존 최신순/인기순 선택 상태 반영되지 않는 점 개선
     const filter = (e, $searchCancelBtn) => {
       $el.lastElementChild.firstElementChild.innerHTML = "";
+      // HACK mode 분기플래그 걷어내고 새로 만드세요
       filterdList = (mode === "popular" ? popularList : timelineList).myFilter(
         item => {
           return (
@@ -251,6 +256,7 @@
     const cancelSearch = $searchInput => {
       $el.lastElementChild.firstElementChild.innerHTML = "";
       $searchInput.value = "";
+      // HACK mode 분기플래그 걷어내고 새로 만드세요
       if (mode === "popular") {
         filterdList = [...popularList];
         const listList = divide(popularList, 3);
@@ -262,21 +268,23 @@
       }
     };
 
+    const comparator = {
+      latest: (x, y) => {
+        return Date.parse(y.timestamp) - Date.parse(x.timestamp);
+      },
+      popular: (x, y) => {
+        return getEvalValue(y) - getEvalValue(x);
+      },
+    }
+    /* TODO 적절한 패턴 적용하여 견고한 구조로 리팩토링 했습니다 (수정완료)
+    여기에서 mode는 상태값이 아니므로, 이런 경우엔 제한적으로 사용해도 무방합니다
+    다만, 로직 전체를 메소드 내부에서 if나 switch로 분기시키는 구조는 지양하세요
+    분기문은 예외적인 일부로직만 처리하는 게 바람직합니다 */
     const sort = mode => {
       $el.lastElementChild.firstElementChild.innerHTML = "";
-      if (mode === "latest") {
-        filterdList.mySort((x, y) => {
-          return Date.parse(y.timestamp) - Date.parse(x.timestamp);
-        });
-        const listList = divide(filterdList, 3);
-        items.render(listList);
-      } else if (mode === "popular") {
-        filterdList.mySort((x, y) => {
-          return getEvalValue(y) - getEvalValue(x);
-        });
-        const listList = divide(filterdList, 3);
-        items.render(listList);
-      }
+      filterdList.mySort(comparator[mode]);
+      const listList = divide(filterdList, 3);
+      items.render(listList);
     };
 
     const render = () => {
