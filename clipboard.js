@@ -181,7 +181,6 @@
     let $el;
     const getEvalValue = item => item.clipCount + item.commentCount * 2;
     let page = 1;
-
     const timelineList = await common.fetchApiData(url, page++);
     let filterdList = [...timelineList];
     const popularList = filterdList.mySort((x, y) => {
@@ -232,7 +231,7 @@
       }
       return listList;
     };
-    const listList = divide(timelineList, 3);
+    const listList = divide(timelineList, ITEM_PER_ROW);
 
     // 불필요 코드 제거 & 검색 시 기존 최신순/인기순 선택 상태 반영되지 않는 점 개선
     const filter = (e, $searchCancelBtn) => {
