@@ -4,64 +4,64 @@
  * All contents cannot be copied without permission.
  */
 const common = (() => {
-    const IMG_PATH = 'https://it-crafts.github.io/lesson/img';
-    const fetchApiData = async (url, page = 'info') => {
-        const res = await fetch(url + page);
-        const data = await res.json();
-        return data.data;
-    }
+  const IMG_PATH = "https://it-crafts.github.io/lesson/img";
+  const fetchApiData = async (url, page = "info") => {
+    const res = await fetch(url + page);
+    const data = await res.json();
+    return data.data;
+  };
 
-    return { IMG_PATH, fetchApiData }
+  return { IMG_PATH, fetchApiData };
 })();
 
-const Root = (selector) => {
-    let $el;
-    let $page;
+const Root = selector => {
+  let $el;
+  let $page;
 
-    const create = () => {
-        $el = document.querySelector(selector);
-        $page = Timeline($el);
-        $page.create();
-    }
+  const create = () => {
+    $el = document.querySelector(selector);
+    $page = Timeline($el);
+    $page.create();
+  };
 
-    const destroy = () => {
-        $page && $page.destroy();
-    }
+  const destroy = () => {
+    $page && $page.destroy();
+  };
 
-    return { $el, create, destroy }
+  return { $el, create, destroy };
 };
 
-const Timeline = ($parent) => {
-    const URL = 'https://my-json-server.typicode.com/it-crafts/lesson/timeline/';
-    let $el;
-    let $profile;
-    let $content;
+const Timeline = $parent => {
+  const URL = "https://my-json-server.typicode.com/it-crafts/lesson/timeline/";
+  let $el;
+  let $profile;
+  let $content;
 
-    const create = async () => {
-        render();
-        $el = $parent.firstElementChild;
-        const [ totalPage, profileData ] = await fetch();
-        $profile = TimelineProfile($el, profileData);
-        $profile.create();
-        $content = TimelineContent($el, URL, profileData, totalPage);
-        $content.create();
-    }
+  const create = async () => {
+    render();
+    $el = $parent.firstElementChild;
+    const [totalPage, profileData] = await fetch();
+    $profile = TimelineProfile($el, profileData);
+    $profile.create();
+    $content = TimelineContent($el, URL, profileData, totalPage);
+    $content.create();
+  };
 
-    const destroy = () => {
-        $profile && $profile.destroy();
-        $content && $content.destroy();
-        $parent.removeChild($el);
-    }
+  const destroy = () => {
+    $profile && $profile.destroy();
+    $content && $content.destroy();
+    $parent.removeChild($el);
+  };
 
-    const fetch = async () => {
-        const infoData = await common.fetchApiData(URL);
-        const totalPage = infoData.totalPage * 1;
-        const profileData = infoData.profile;
-        return [ totalPage, profileData ];
-    }
+  const fetch = async () => {
+    const infoData = await common.fetchApiData(URL);
+    const totalPage = infoData.totalPage * 1;
+    const profileData = infoData.profile;
+    return [totalPage, profileData];
+  };
 
-    const render = () => {
-        $parent.innerHTML = `
+  const render = () => {
+    $parent.innerHTML = `
             <div class="v9tJq">
                 <div class="fx7hk">
                     <a class="_9VEo1 T-jvg" href="javascript:;" data-type="grid"><span aria-label="게시물" class="glyphsSpritePhoto_grid__outline__24__grey_5 u-__7"></span></a>
@@ -70,47 +70,55 @@ const Timeline = ($parent) => {
                 </div>
             </div>
         `;
-    }
+  };
 
-    return { $el, create, destroy }
+  return { $el, create, destroy };
 };
 
 const TimelineProfile = ($parent, profileData = {}) => {
-    let $el;
+  let $el;
 
-    const create = () => {
-        render(profileData);
-        $el = $parent.firstElementChild;
+  const create = () => {
+    render(profileData);
+    $el = $parent.firstElementChild;
+  };
+
+  const destroy = () => {
+    $parent.removeChild($el);
+  };
+
+  const scaleDown = numstring => {
+    const num = numstring.replace(/,/g, "");
+    if (num >= 1000000) {
+      return Math.floor(num / 100000) / 10 + "백만";
     }
-
-    const destroy = () => {
-        $parent.removeChild($el);
+    if (num >= 1000) {
+      return Math.floor(num / 100) / 10 + "천";
     }
+    return num;
+  };
 
-    const scaleDown = numstring => {
-        const num = numstring.replace(/,/g, '');
-        if(num >= 1000000) {
-            return Math.floor(num / 100000) / 10 + '백만'
-        }
-        if(num >= 1000) {
-            return Math.floor(num / 100) / 10 + '천'
-        }
-        return num;
-    };
-
-    const render = (data) => {
-        $parent.insertAdjacentHTML('afterbegin', `
+  const render = data => {
+    $parent.insertAdjacentHTML(
+      "afterbegin",
+      `
             <div>
                 <header class="HVbuG">
                     <div class="XjzKX">
                         <div class="RR-M- h5uC0" role="button" tabindex="0">
                             <canvas class="CfWVH" height="91" width="91" style="position: absolute; top: -7px; left: -7px; width: 91px; height: 91px;"></canvas>
-                            <span class="_2dbep" role="link" tabindex="0" style="width: 77px; height: 77px;"><img alt="${data.name}님의 프로필 사진" class="_6q-tv" src="${common.IMG_PATH}${data.img}"></span>
+                            <span class="_2dbep" role="link" tabindex="0" style="width: 77px; height: 77px;"><img alt="${
+                              data.name
+                            }님의 프로필 사진" class="_6q-tv" src="${
+        common.IMG_PATH
+      }${data.img}"></span>
                         </div>
                     </div>
                     <section class="zwlfE">
                         <div class="nZSzR">
-                            <h1 class="_7UhW9 fKFbl yUEEX KV-D4 fDxYl">${data.name}</h1>
+                            <h1 class="_7UhW9 fKFbl yUEEX KV-D4 fDxYl">${
+                              data.name
+                            }</h1>
                             <span class="mrEK_ Szr5J coreSpriteVerifiedBadge" title="인증됨">인증됨</span>
                             <div class="AFWDX"><button class="dCJp8 afkep"><span aria-label="옵션" class="glyphsSpriteMore_horizontal__outline__24__grey_9 u-__7"></span></button></div>
                         </div>
@@ -125,69 +133,87 @@ const TimelineProfile = ($parent, profileData = {}) => {
                     </section>
                 </header>
                 <div class="-vDIg">
-                    <h1 class="rhpdm">${data.title}</h1><br><span>${data.text}</span>
+                    <h1 class="rhpdm">${data.title}</h1><br><span>${
+        data.text
+      }</span>
                 </div>
                 <ul class="_3dEHb">
-                    <li class="LH36I"><span class="_81NM2">게시물 <span class="g47SY lOXF2">${data.post}</span></span></li>
-                    <li class="LH36I"><a class="_81NM2" href="javascript:;">팔로워 <span class="g47SY lOXF2" title="${data.follower}">${scaleDown(data.follower)}</span></a></li>
-                    <li class="LH36I"><a class="_81NM2" href="javascript:;">팔로우 <span class="g47SY lOXF2">${data.follow}</span></a></li>
+                    <li class="LH36I"><span class="_81NM2">게시물 <span class="g47SY lOXF2">${
+                      data.post
+                    }</span></span></li>
+                    <li class="LH36I"><a class="_81NM2" href="javascript:;">팔로워 <span class="g47SY lOXF2" title="${
+                      data.follower
+                    }">${scaleDown(data.follower)}</span></a></li>
+                    <li class="LH36I"><a class="_81NM2" href="javascript:;">팔로우 <span class="g47SY lOXF2">${
+                      data.follow
+                    }</span></a></li>
                 </ul>
             </div>
-        `);
-    }
+        `
+    );
+  };
 
-    return { $el, create, destroy }
+  return { $el, create, destroy };
 };
 
-const TimelineContent = ($parent, url = '', profileData = {}, totalPage = 1) => {
-    let $el;
-    let $feed;
+const TimelineContent = (
+  $parent,
+  url = "",
+  profileData = {},
+  totalPage = 1
+) => {
+  let $el;
+  let $feed;
 
-    let page = 0;
-    const dataList = [];
+  let page = 0;
+  const dataList = [];
 
-    const create = async () => {
-        render();
-        $el = $parent.lastElementChild;
-        const pageDataList = await fetch();
-        $feed = Feed($el.firstElementChild, profileData, pageDataList);
-        $feed.create();
-        initInfiniteScroll();
-    }
+  const create = async () => {
+    render();
+    $el = $parent.lastElementChild;
+    const pageDataList = await fetch();
+    $feed = Feed($el.firstElementChild, profileData, pageDataList);
+    $feed.create();
+    initInfiniteScroll();
+  };
 
-    const destroy = () => {
-        $feed && $feed.destroy();
-        $parent.removeChild($el);
-    }
+  const destroy = () => {
+    $feed && $feed.destroy();
+    $parent.removeChild($el);
+  };
 
-    const fetch = async () => {
-        const pageDataList = await common.fetchApiData(url, ++page);
-        dataList.push(pageDataList);
-        return pageDataList;
-    }
+  const fetch = async () => {
+    const pageDataList = await common.fetchApiData(url, ++page);
+    dataList.push(pageDataList);
+    return pageDataList;
+  };
 
-    const initInfiniteScroll = () => {
-        const $loading = $el.lastElementChild;
-        const io = new IntersectionObserver((entryList, observer) => {
-            entryList.forEach(async entry => {
-                if(!entry.isIntersecting) { return; }
-                await ajaxMore();
-                if(page >= totalPage) {
-                    observer.unobserve(entry.target);
-                    $loading.style.display = 'none';
-                }
-            }); // rootMargin 미동작 (인스타그램에서 자체적으로 막아놓은 것 같기도 함)
-        });
-        io.observe($loading);
-    }
+  const initInfiniteScroll = () => {
+    const $loading = $el.lastElementChild;
+    const io = new IntersectionObserver((entryList, observer) => {
+      entryList.forEach(async entry => {
+        if (!entry.isIntersecting) {
+          return;
+        }
+        await ajaxMore();
+        if (page >= totalPage) {
+          observer.unobserve(entry.target);
+          $loading.style.display = "none";
+        }
+      }); // rootMargin 미동작 (인스타그램에서 자체적으로 막아놓은 것 같기도 함)
+    });
+    io.observe($loading);
+  };
 
-    const ajaxMore = async () => {
-        const pageDataList = await fetch();
-        $feed && $feed.addFeedItems(profileData, pageDataList);
-    }
+  const ajaxMore = async () => {
+    const pageDataList = await fetch();
+    $feed && $feed.addFeedItems(profileData, pageDataList);
+  };
 
-    const render = () => {
-        $parent.insertAdjacentHTML('beforeend', `
+  const render = () => {
+    $parent.insertAdjacentHTML(
+      "beforeend",
+      `
             <div class="_2z6nI">
                 <div style="flex-direction: column;">
                 </div>
@@ -195,33 +221,53 @@ const TimelineContent = ($parent, url = '', profileData = {}, totalPage = 1) => 
                     <div class="Igw0E IwRSH YBx95 _4EzTm _9qQ0O ZUqME" style="height: 32px; width: 32px;"><svg aria-label="읽어들이는 중..." class="By4nA" viewBox="0 0 100 100"><rect fill="#555555" height="6" opacity="0" rx="3" ry="3" transform="rotate(-90 50 50)" width="25" x="72" y="47"></rect><rect fill="#555555" height="6" opacity="0.08333333333333333" rx="3" ry="3" transform="rotate(-60 50 50)" width="25" x="72" y="47"></rect><rect fill="#555555" height="6" opacity="0.16666666666666666" rx="3" ry="3" transform="rotate(-30 50 50)" width="25" x="72" y="47"></rect><rect fill="#555555" height="6" opacity="0.25" rx="3" ry="3" transform="rotate(0 50 50)" width="25" x="72" y="47"></rect><rect fill="#555555" height="6" opacity="0.3333333333333333" rx="3" ry="3" transform="rotate(30 50 50)" width="25" x="72" y="47"></rect><rect fill="#555555" height="6" opacity="0.4166666666666667" rx="3" ry="3" transform="rotate(60 50 50)" width="25" x="72" y="47"></rect><rect fill="#555555" height="6" opacity="0.5" rx="3" ry="3" transform="rotate(90 50 50)" width="25" x="72" y="47"></rect><rect fill="#555555" height="6" opacity="0.5833333333333334" rx="3" ry="3" transform="rotate(120 50 50)" width="25" x="72" y="47"></rect><rect fill="#555555" height="6" opacity="0.6666666666666666" rx="3" ry="3" transform="rotate(150 50 50)" width="25" x="72" y="47"></rect><rect fill="#555555" height="6" opacity="0.75" rx="3" ry="3" transform="rotate(180 50 50)" width="25" x="72" y="47"></rect><rect fill="#555555" height="6" opacity="0.8333333333333334" rx="3" ry="3" transform="rotate(210 50 50)" width="25" x="72" y="47"></rect><rect fill="#555555" height="6" opacity="0.9166666666666666" rx="3" ry="3" transform="rotate(240 50 50)" width="25" x="72" y="47"></rect></svg></div>
                 </div>
             </div>
-        `);
-    }
+        `
+    );
+  };
 
-    return { $el, create, destroy }
+  return { $el, create, destroy };
 };
 
-// TODO 뷰 역할인 Feed 컴포넌트에 이미지 레이지로드 기능 추가 - initInfiniteScroll 히스토리 참고
 const Feed = ($parent, profileData = {}, pageDataList = []) => {
-    const $elList = [];
+  const $elList = [];
 
-    const create = () => {
-        addFeedItems(profileData, pageDataList);
-    }
+  const create = () => {
+    addFeedItems(profileData, pageDataList);
+  };
 
-    const destroy = () => {
-        $elList.forEach($el => $parent.removeChild($el));
-    }
+  const destroy = () => {
+    $elList.forEach($el => $parent.removeChild($el));
+  };
 
-    const addFeedItems = (profileData = {}, pageDataList = []) => {
-        const firstIndex = $parent.children.length;
-        render(profileData, pageDataList);
-        $elList.push(...[].slice.call($parent.children, firstIndex));
-    }
+  // 이미지 요소 배열을 전달받아 관찰대상으로 등록 & 해당 이미지 요소가 화면에 나타날 때, 이미지 src 속성을 data-src 값으로 교체
+  const lazyLoad = $imgs => {
+    const io = new IntersectionObserver((entryList, observer) => {
+      entryList.forEach(async entry => {
+        if (!entry.isIntersecting) {
+          return;
+        }
+        entry.target.src = entry.target.getAttribute("data-src");
+      });
+    });
+    // imgs에 포함된 이미지 요소를 관찰대상으로 등록
+    $imgs.forEach($img => io.observe($img));
+  };
 
-    const render = (profileData, pageDataList) => {
-        const html = pageDataList.reduce((html, data) => {
-            html += `
+  const addFeedItems = (profileData = {}, pageDataList = []) => {
+    const firstIndex = $parent.children.length;
+    render(profileData, pageDataList);
+    $elList.push(...[].slice.call($parent.children, firstIndex));
+    // lazyLoad를 위해 관찰대상에 추가할 이미지 요소 추출하여 lazyLoad 함수에 전달
+    const $imgs = [];
+    $elList.forEach($el => {
+      $imgs.push(...$el.querySelectorAll("img.FFVAD"));
+    });
+    lazyLoad($imgs);
+  };
+
+  const render = (profileData, pageDataList) => {
+    const html = pageDataList.reduce((html, data) => {
+      html += `
                 <article id="feed" class="M9sTE h0YNM SgTZ1">
                     <header class="Ppjfr UE9AK wdOqh">
                         <div class="RR-M- h5uC0 mrq0Z" role="button" tabindex="0">
@@ -282,15 +328,15 @@ const Feed = ($parent, profileData = {}, pageDataList = []) => {
                     </div>
                 </article>
             `;
-            return html;
-        }, '');
-        $parent.insertAdjacentHTML('beforeend', html);
-    }
+      return html;
+    }, "");
+    $parent.insertAdjacentHTML("beforeend", html);
+  };
 
-    return { $elList, create, destroy, addFeedItems }
+  return { $elList, create, destroy, addFeedItems };
 };
 
-const root = Root('main');
+const root = Root("main");
 root.create();
 // root.destroy();
 // root.create();
