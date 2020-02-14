@@ -179,7 +179,6 @@
 
   const grid = await (async ($parent, url) => {
     let $el;
-    const getEvalValue = item => item.clipCount + item.commentCount * 2;
     let page = 1;
     const fetchedData = await common.fetchApiData(url, page++);
     // 검색 취소 시, 보여줄 데이터를 저장하는 배열(sort 상태가 반영된 전체데이터)
@@ -198,6 +197,9 @@
       const $searchInput = $parent.getElementsByTagName("input")[0];
       const $searchCancelBtn = document.getElementById("searchCancelBtn");
 
+      /* FIXME 리스너에 화살표함수를 담을 경우, 타겟을 못 잡는 이슈가 있습니다
+      그리고, 컴포넌트에 추가되는 모든 것은 제거가 가능해야 합니다
+      별도의 일반함수로 분리 후 해당함수를 add 해주세요 */
       $latestBtn.addEventListener("click", () => {
         sort("latest");
       });
@@ -226,16 +228,22 @@
     };
     const listList = divide(fetchedData, 3);
 
-    const comparator = {
-      latest: (x, y) => {
-        return Date.parse(y.timestamp) - Date.parse(x.timestamp);
-      },
-      popular: (x, y) => {
-        return getEvalValue(y) - getEvalValue(x);
+    const comparator = (() => {
+      const evalScore = item => item.clipCount + item.commentCount * 2;
+      const evalDate = itme => Date.parse(itme.timestamp);
+
+      return {
+        latest: (x, y) => {
+          return evalDate(y) - evalDate(x);
+        },
+        popular: (x, y) => {
+          return evalScore(y) - evalScore(x);
+        }
       }
-    };
+    })()
 
     // mode 변수 사용하지 않도록 수정
+    // TODO e를 넘겨받지 말고, 리스너에서 가공해서 전달 해주세요 
     const filter = e => {
       $el.lastElementChild.firstElementChild.innerHTML = "";
       filterdList = sortedAllData.myFilter(item => {
