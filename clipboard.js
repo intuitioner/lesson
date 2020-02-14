@@ -181,18 +181,11 @@
     let $el;
     const getEvalValue = item => item.clipCount + item.commentCount * 2;
     let page = 1;
-    const timelineList = await common.fetchApiData(url, page++);
-    let filterdList = [...timelineList];
-    const popularList = filterdList.mySort((x, y) => {
-      return getEvalValue(y) - getEvalValue(x);
-    });
-
-    /* HACK 이런 로직을 분기하는 플래그성 상태변수 절대 사용하지 마세요
-    이 변수 하나 때문에, 전체 구조를 처음부터 새로 잡아야 할 만큼 코드가 더러워졌습니다
-    로직이 하나도 격리가 안 되고, 가독성/유지보수성도 떨어지고, 영향범위를 넓히는 취약한 코드입니다
-    짤 때야 플래그 하나로 술술 풀리니까 편하겠지만, 이후 두고두고 괴롭히는 트로이목마 변수입니다 */
-    // 정렬 상태 변수 초기화
-    let mode = "latest";
+    const fetchedData = await common.fetchApiData(url, page++);
+    // 검색 취소 시, 보여줄 데이터를 저장하는 배열(sort 상태가 반영된 전체데이터)
+    let sortedAllData = [...fetchedData];
+    // 검색한 결과를 저장하는 배열
+    let filterdList = [...fetchedData];
 
     const create = () => {
       render();
@@ -205,19 +198,15 @@
       const $searchInput = $parent.getElementsByTagName("input")[0];
       const $searchCancelBtn = document.getElementById("searchCancelBtn");
 
-      // 최신순 버튼 클릭 시, 정렬 상태 저장
       $latestBtn.addEventListener("click", () => {
         sort("latest");
-        mode = "latest";
       });
-      // 인기순 버튼 클릭 시, 정렬 상태 저장
       $popularBtn.addEventListener("click", () => {
         sort("popular");
-        mode = "popular";
       });
       $searchInput.addEventListener("keyup", e => {
         $searchCancelBtn.style.display = "";
-        filter(e, $searchCancelBtn);
+        filter(e);
       });
       $searchCancelBtn.addEventListener("click", () => {
         $searchCancelBtn.style.display = "none";
@@ -235,38 +224,7 @@
       }
       return listList;
     };
-    const listList = divide(timelineList, 3);
-
-    // 불필요 코드 제거 & 검색 시 기존 최신순/인기순 선택 상태 반영되지 않는 점 개선
-    const filter = (e, $searchCancelBtn) => {
-      $el.lastElementChild.firstElementChild.innerHTML = "";
-      // HACK mode 분기플래그 걷어내고 새로 만드세요
-      filterdList = (mode === "popular" ? popularList : timelineList).myFilter(
-        item => {
-          return (
-            item.name.search(e.target.value) !== -1 ||
-            item.text.search(e.target.value) !== -1
-          );
-        }
-      );
-      const listList = divide(filterdList, 3);
-      items.render(listList);
-    };
-
-    const cancelSearch = $searchInput => {
-      $el.lastElementChild.firstElementChild.innerHTML = "";
-      $searchInput.value = "";
-      // HACK mode 분기플래그 걷어내고 새로 만드세요
-      if (mode === "popular") {
-        filterdList = [...popularList];
-        const listList = divide(popularList, 3);
-        items.render(listList);
-      } else {
-        filterdList = [...timelineList];
-        const listList = divide(timelineList, 3);
-        items.render(listList);
-      }
-    };
+    const listList = divide(fetchedData, 3);
 
     const comparator = {
       latest: (x, y) => {
@@ -274,14 +232,34 @@
       },
       popular: (x, y) => {
         return getEvalValue(y) - getEvalValue(x);
-      },
-    }
-    /* TODO 적절한 패턴 적용하여 견고한 구조로 리팩토링 했습니다 (수정완료)
-    여기에서 mode는 상태값이 아니므로, 이런 경우엔 제한적으로 사용해도 무방합니다
-    다만, 로직 전체를 메소드 내부에서 if나 switch로 분기시키는 구조는 지양하세요
-    분기문은 예외적인 일부로직만 처리하는 게 바람직합니다 */
+      }
+    };
+
+    // mode 변수 사용하지 않도록 수정
+    const filter = e => {
+      $el.lastElementChild.firstElementChild.innerHTML = "";
+      filterdList = sortedAllData.myFilter(item => {
+        return (
+          item.name.search(e.target.value) !== -1 ||
+          item.text.search(e.target.value) !== -1
+        );
+      });
+      const listList = divide(filterdList, 3);
+      items.render(listList);
+    };
+
+    // mode 변수 사용하지 않도록 수정
+    const cancelSearch = $searchInput => {
+      $el.lastElementChild.firstElementChild.innerHTML = "";
+      $searchInput.value = "";
+      filterdList = [...sortedAllData];
+      const listList = divide(sortedAllData, 3);
+      items.render(listList);
+    };
+
     const sort = mode => {
       $el.lastElementChild.firstElementChild.innerHTML = "";
+      sortedAllData.mySort(comparator[mode]);
       filterdList.mySort(comparator[mode]);
       const listList = divide(filterdList, 3);
       items.render(listList);
