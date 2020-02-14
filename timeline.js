@@ -157,6 +157,8 @@
         return html;
       }, "");
 
+      /* FIXME 렌더링 로직에 비즈니스 로직 담지 마세요
+      data 받은 그대로 렌더하고, 로직은 data 들어오기 전에 가공되어 들어옵니다 */
       const rest = list.length % 3;
       if (rest === 1) {
         html += `<div class="_bz0w"></div><div class="_bz0w"></div>`;
@@ -201,6 +203,9 @@
     }
   };
 
+  /* FIXME 각 메소드의 역할이 비대해서, 유사한 로직의 반복이 많습니다
+  재사용하기 어렵고, 유지보수하기 어려운 견고하지 못한 구조입니다
+  이벤트리스너와 비즈니스로직, API호출 및 전후처리 등 역할에 맞는 메소드를 분리 해주세요 */
   const firstRenderTimeline = () => {
     beforeRenderTimeline();
     const listList = divide(firstList, 3);
