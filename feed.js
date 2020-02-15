@@ -251,6 +251,8 @@ const Feed = ($parent, profileData = {}, pageDataList = []) => {
           return;
         }
         entry.target.src = entry.target.getAttribute("data-src");
+        // 관찰대상에서 제외
+        observer.unobserve(entry.target);
       });
     });
     // imgs에 포함된 이미지 요소를 관찰대상으로 등록
