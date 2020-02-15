@@ -190,18 +190,22 @@ const TimelineContent = (
 
   const initInfiniteScroll = () => {
     const $loading = $el.lastElementChild;
-    const io = new IntersectionObserver((entryList, observer) => {
-      entryList.forEach(async entry => {
-        if (!entry.isIntersecting) {
-          return;
-        }
-        await ajaxMore();
-        if (page >= totalPage) {
-          observer.unobserve(entry.target);
-          $loading.style.display = "none";
-        }
-      }); // rootMargin 미동작 (인스타그램에서 자체적으로 막아놓은 것 같기도 함)
-    });
+    const io = new IntersectionObserver(
+      (entryList, observer) => {
+        entryList.forEach(async entry => {
+          if (!entry.isIntersecting) {
+            return;
+          }
+          await ajaxMore();
+          if (page >= totalPage) {
+            observer.unobserve(entry.target);
+            $loading.style.display = "none";
+          }
+        });
+      },
+      // rootMargin 추가
+      { root: Root.$el, rootMargin: "0px 0px 2000px 0px" }
+    );
     io.observe($loading);
   };
 
