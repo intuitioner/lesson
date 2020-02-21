@@ -204,7 +204,7 @@ const TimelineContent = (
         });
       },
       // rootMargin 추가
-      { root: Root.$el, rootMargin: "0px 0px 2000px 0px" }
+      { rootMargin: "0px 0px 2000px 0px" }
     );
     io.observe($loading);
   };
@@ -245,12 +245,19 @@ const Feed = ($parent, profileData = {}, pageDataList = []) => {
 
   // 이미지 요소 배열을 전달받아 관찰대상으로 등록 & 해당 이미지 요소가 화면에 나타날 때, 이미지 src 속성을 data-src 값으로 교체
   const lazyLoad = $imgs => {
+    /* TODO 현재는 페이지수 만큼 io객체가 생성되고 있습니다, 만약 10페이지, 100페이지, ... 가 있다면 그 만큼 생성됩니다
+    로직상 Feed는 List를 담는 컴포넌트이기 때문에, 사실 io는 하나만 있으면 충분합니다
+    io 생성은 컴포넌트 레벨로 올리고, observe하는 로직만 반복되면 성능이 개선될 수 있을 것 같습니다 */
     const io = new IntersectionObserver((entryList, observer) => {
       entryList.forEach(async entry => {
         if (!entry.isIntersecting) {
           return;
         }
-        entry.target.src = entry.target.getAttribute("data-src");
+        /* COMMENT data 속성은 커스텀 어트리뷰트가 아니라, 엘리먼트에 데이터를 담기위한 표준입니다
+        아마도 크로스 브라우징을 위해 DOM 어트리뷰트 값에 직접 접근하신 것 같습니다
+        아래 표준 API도 참고 해보세요 (IE11부터 정상적으로 작동합니다, 모바일 화면이므로 사실 IE 대응 불필요합니다) */
+        entry.target.src = entry.target.dataset.src;
+        delete entry.target.dataset.src;
         // 관찰대상에서 제외
         observer.unobserve(entry.target);
       });
@@ -266,8 +273,21 @@ const Feed = ($parent, profileData = {}, pageDataList = []) => {
     // lazyLoad를 위해 관찰대상에 추가할 이미지 요소 추출하여 lazyLoad 함수에 전달
     const $imgs = [];
     $elList.forEach($el => {
+      /* FIXME 일단 여기서는 FFVAD 클래스가 내부적으로 이미지를 뜻하는 게 아니어서 바람직하지 못합니다
+      해당 클래스가 이미지가 맞더라도, 추후 확장시 다른 엘리먼트에 해당 클래스가 사용되면 버그가 발생합니다
+      또는 해당 클래스의 이름이 변경될 경우에도 의도치 않은 동작이 발생합니다 (이 때는 장애)
+      스타일을 위해 사용한 마크업 상의 클래스는 컴포넌트 로직에서는 되도록 사용을 지양해주세요
+      마크업의 클래스와 컴포넌트의 로직이 의미상으로 1:1로 일치되는 경우는 거의 없습니다
+      거의 대부분 우연히 그 시점에만 때려맞았을 뿐이고, 잠재적인 버그를 갖고 있습니다
+      (참고로 NHN에서는, 꼭 필요할 경우 js-classname 같은 클래스를 직접 추가해서 쓰는 걸 권장합니다)
+      만약 제가 했다면 img[data-src] 정도로 썼을 것 같은데, 여기부터는 취향이라 참고만 해주세요 */
       $imgs.push(...$el.querySelectorAll("img.FFVAD"));
     });
+    /* BUG 추가한 이미지만 뽑으려던 것 같으나, 실제로는 $imgs에 전체 이미지(이전 페이지 포함) 들어 있습니다
+    2페이지, 3페이지, ... addFeedItems 호출 시에 이전페이지 이미지들이 다시 옵저버에 등록됩니다
+    겸사겸사 delete entry.target.dataset.src; 추가했으니, 끝까지 내렸다가 다시 올려보세요
+    해법은 추가한 엘리먼트 대상으로 룩업을 하는 방법이 있을 것 같고 (push 하기 전에 미리 뽑아두고?)
+    아니면 data-src 속성을 기준으로 뽑을 수도 있을 것 같습니다 */
     lazyLoad($imgs);
   };
 
