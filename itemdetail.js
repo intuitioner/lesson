@@ -4,157 +4,168 @@
  * All contents cannot be copied without permission.
  */
 const common = (function() {
-    const IMG_PATH = 'https://it-crafts.github.io/lesson/img';
-    const fetchApiData = async (url, page = 'info') => {
-        const res = await fetch(url + page);
-        const data = await res.json();
-        return data.data;
-    }
+  const IMG_PATH = "https://it-crafts.github.io/lesson/img";
+  const fetchApiData = async (url, page = "info") => {
+    const res = await fetch(url + page);
+    const data = await res.json();
+    return data.data;
+  };
 
-    return { IMG_PATH, fetchApiData }
+  return { IMG_PATH, fetchApiData };
 })();
 
 const Root = (() => {
-    const Root = function(selector) {
-        this.$el = document.querySelector(selector);
-        this._page;
-    };
-    const proto = Root.prototype;
+  const Root = function(selector) {
+    this.$el = document.querySelector(selector);
+    this._page;
+  };
+  const proto = Root.prototype;
 
-    proto.create = function() {
-        this._page = new ItemDetail(this.$el);
-        this._page.create();
-    }
-    proto.destroy = function() {
-        this._page && this._page.destroy();
-    }
+  proto.create = function() {
+    this._page = new ItemDetail(this.$el);
+    this._page.create();
+  };
+  proto.destroy = function() {
+    this._page && this._page.destroy();
+  };
 
-    return Root;
+  return Root;
 })();
 
 // 이제부터 PageTurner는 이제 추상클래스가 아니라, 원본 컴포넌트의 역할을 보조해주는 독립적인 객체이다
 const PageTurner = (() => {
-    const PageTurner = function($loading, $more) {
-        this.$loading = $loading;
-        this.$more = $more;
-    }
-    const proto = PageTurner.prototype;
+  const PageTurner = function($loading, $more) {
+    this.$loading = $loading;
+    this.$more = $more;
+  };
+  const proto = PageTurner.prototype;
 
-    proto.more = async function(ajaxMore) {
-        this.beforeMore();
-        const hasNext = await ajaxMore();
-        this.afterMore(hasNext);
+  proto.more = async function(ajaxMore) {
+    this.beforeMore();
+    const hasNext = await ajaxMore();
+    this.afterMore(hasNext);
+  };
+  proto.beforeMore = function() {
+    this.$more.style.display = "none";
+    this.$loading.style.display = "";
+  };
+  proto.afterMore = function(hasNext) {
+    this.$loading.style.display = "none";
+    if (hasNext) {
+      this.$more.style.display = "";
     }
-    proto.beforeMore = function() {
-        this.$more.style.display = 'none';
-        this.$loading.style.display = '';
-    }
-    proto.afterMore = function(hasNext) {
-        this.$loading.style.display = 'none';
-        if(hasNext) {
-            this.$more.style.display = '';
-        }
-    }
+  };
 
-    return PageTurner;
+  return PageTurner;
 })();
 
 const AutoPageTurner = (() => {
-    const AutoPageTurner = function($loading, $more) {
-        PageTurner.call(this, $loading, $more);
-    }
-    AutoPageTurner.prototype = Object.create(PageTurner.prototype);
-    AutoPageTurner.prototype.constructor = AutoPageTurner;
-    const proto = AutoPageTurner.prototype;
+  const AutoPageTurner = function($loading, $more) {
+    PageTurner.call(this, $loading, $more);
+  };
+  AutoPageTurner.prototype = Object.create(PageTurner.prototype);
+  AutoPageTurner.prototype.constructor = AutoPageTurner;
+  const proto = AutoPageTurner.prototype;
 
-    // PageTurner의 more 메소드가 오버라이드 됨
-    proto.more = function(ajaxMore) {
-        this.beforeMore();
-        const io = new IntersectionObserver((entryList, observer) => {
-            entryList.forEach(async entry => {
-                if(!entry.isIntersecting) {
-                    return;
-                }
-                const hasNext = await ajaxMore();
-                if(!hasNext) {
-                    observer.unobserve(entry.target);
-                    this.afterMore(hasNext);
-                }
-            });
-        }, { rootMargin: innerHeight + 'px' });
-        io.observe(this.$loading);
-    }
+  // PageTurner의 more 메소드가 오버라이드 됨
+  proto.more = function(ajaxMore) {
+    this.beforeMore();
+    const io = new IntersectionObserver(
+      (entryList, observer) => {
+        entryList.forEach(async entry => {
+          if (!entry.isIntersecting) {
+            return;
+          }
+          const hasNext = await ajaxMore();
+          if (!hasNext) {
+            observer.unobserve(entry.target);
+            this.afterMore(hasNext);
+          }
+        });
+      },
+      { rootMargin: innerHeight + "px" }
+    );
+    io.observe(this.$loading);
+  };
 
-    return AutoPageTurner;
+  return AutoPageTurner;
 })();
 
 const ItemDetail = (() => {
-    const URL = 'https://my-json-server.typicode.com/it-crafts/lesson/detail/';
+  const URL = "https://my-json-server.typicode.com/it-crafts/lesson/detail/";
 
-    const ItemDetail = function($parent) {
-        this.$parent = $parent;
-        this.render();
-        this.$el = $parent.firstElementChild;
-        this.$loading = this.$el.querySelector('.js-loading');
-        this.$more = this.$el.querySelector('.js-more');
+  const ItemDetail = function($parent) {
+    this.$parent = $parent;
+    this.render();
+    this.$el = $parent.firstElementChild;
+    this.$loading = this.$el.querySelector(".js-loading");
+    this.$more = this.$el.querySelector(".js-more");
 
-        this._item;
-        this._detail;
-        this._pageTurner;
+    this._item;
+    this._detail;
+    this._pageTurner;
 
-        this._data = {};
+    this._data = {};
 
-        this.$click;
-    }
-    const proto = ItemDetail.prototype;
+    this.$click;
+  };
+  const proto = ItemDetail.prototype;
 
-    proto.create = async function() {
-        const detailData = await this.fetch();
-        this._item = new Item(this.$el.firstElementChild, detailData, detailData.imgList, detailData.profile);
-        this._item.create();
-        this._detail = new Detail(this.$el.firstElementChild, detailData.detailList);
-        this._detail.create();
-        // ItemDetail이 PageTurner를 상속하는 게 아닌, 내부에 부하로 생성하고 일을 대신 시키기만 한다 (악보랑 악보대를 알려준다)
-        this._pageTurner = new PageTurner(this.$loading, this.$more);
-        this.addEvent();
-    }
-    proto.destroy = function() {
-        this._item && this._item.destroy();
-        this._detail && this._detail.destroy();
-        this.removeEvent();
-        this.$parent.removeChild(this.$el);
-    }
+  proto.create = async function() {
+    const detailData = await this.fetch();
+    this._item = new Item(
+      this.$el.firstElementChild,
+      detailData,
+      detailData.imgList,
+      detailData.profile
+    );
+    this._item.create();
+    this._detail = new Detail(
+      this.$el.firstElementChild,
+      detailData.detailList
+    );
+    this._detail.create();
+    // ItemDetail이 PageTurner를 상속하는 게 아닌, 내부에 부하로 생성하고 일을 대신 시키기만 한다 (악보랑 악보대를 알려준다)
+    this._pageTurner = new PageTurner(this.$loading, this.$more);
+    this.addEvent();
+  };
+  proto.destroy = function() {
+    this._item && this._item.destroy();
+    this._detail && this._detail.destroy();
+    this.removeEvent();
+    this.$parent.removeChild(this.$el);
+  };
 
-    proto.click = function(e) {
-        const listener = e.target.dataset.listener;
-        if(listener === 'infinite') {
-            // 런타임 부모 강제변경 - 이런 행위는 JS에서만 가능하며, 바람직하진 않으나 강력하다
-            Object.setPrototypeOf(this._pageTurner, AutoPageTurner.prototype);
-        }
-
-        // 부하인 PageTurner 객체에게 "이거해" 라고 콜백을 넘겨준다 - 그럼 콜백 앞뒤의 일은 PageTurner가 알아서 한다
-        this._pageTurner.more(async () => {
-            const { hasNext } = await this._detail.addImg();
-            return hasNext;
-        });
-    }
-
-    proto.addEvent = function() {
-        this.$click = this.click.bind(this);
-        this.$more.addEventListener('click', this.$click);
-    }
-    proto.removeEvent = function() {
-        this.$more.removeEventListener('click', this.$click);
+  proto.click = function(e) {
+    const listener = e.target.dataset.listener;
+    if (listener === "infinite") {
+      // 런타임 부모 강제변경 - 이런 행위는 JS에서만 가능하며, 바람직하진 않으나 강력하다
+      Object.setPrototypeOf(this._pageTurner, AutoPageTurner.prototype);
     }
 
-    proto.fetch = async function() {
-        const detailData = await common.fetchApiData(URL, 1);
-        Object.assign(this._data, detailData);
-        return detailData;
-    }
+    // 부하인 PageTurner 객체에게 "이거해" 라고 콜백을 넘겨준다 - 그럼 콜백 앞뒤의 일은 PageTurner가 알아서 한다
+    this._pageTurner.more(async () => {
+      const { hasNext } = await this._detail.addImg();
+      return hasNext;
+    });
+  };
 
-    proto.render = function() {
-        this.$parent.innerHTML = `
+  proto.addEvent = function() {
+    this.$click = this.click.bind(this);
+    this.$more.addEventListener("click", this.$click);
+  };
+  proto.removeEvent = function() {
+    this.$more.removeEventListener("click", this.$click);
+  };
+
+  proto.fetch = async function() {
+    const detailData = await common.fetchApiData(URL, 1);
+    Object.assign(this._data, detailData);
+    return detailData;
+  };
+
+  proto.render = function() {
+    this.$parent.innerHTML = `
             <div class="_2z6nI">
                 <div style="flex-direction: column;">
                 </div>
@@ -167,52 +178,59 @@ const ItemDetail = (() => {
                 </div>
             </div>
         `;
-    }
+  };
 
-    return ItemDetail;
+  return ItemDetail;
 })();
 
 const Item = (() => {
-    const Item = function($parent, detailData = {}, imgDataList = [], profileData = {}) {
-        this.$parent = $parent;
-        this._dataList = imgDataList;
-        this.render(detailData, profileData);
-        this.$el = this.$parent.firstElementChild;
-        this.$slider = this.$el.querySelector('.js-slider');
-        this.$sliderList = this.$slider.querySelector('ul');
-        this.$left = this.$el.querySelector('.js-left');
-        this.$right = this.$el.querySelector('.js-right');
-        this.$pagebar = this.$el.querySelector('.js-pagebar');
-    }
-    const proto = Item.prototype;
+  const Item = function(
+    $parent,
+    detailData = {},
+    imgDataList = [],
+    profileData = {}
+  ) {
+    this.$parent = $parent;
+    this._dataList = imgDataList;
+    this.render(detailData, profileData);
+    this.$el = this.$parent.firstElementChild;
+    this.$slider = this.$el.querySelector(".js-slider");
+    this.$sliderList = this.$slider.querySelector("ul");
+    this.$left = this.$el.querySelector(".js-left");
+    this.$right = this.$el.querySelector(".js-right");
+    this.$pagebar = this.$el.querySelector(".js-pagebar");
+  };
+  const proto = Item.prototype;
 
-    proto.create = function() {
-    }
-    proto.destroy = function() {
-        this.$parent.removeChild(this.$el);
-    }
+  proto.create = function() {};
+  proto.destroy = function() {
+    this.$parent.removeChild(this.$el);
+  };
 
-    proto.click = function() {
-        // TODO $left/$right 화살표 숨김/표시 (필요한 로직 추가)
-        // TODO this.$slider.style.transform = `translateX(${이동좌표}px)`;
-        // TODO $pagebar 이미지에 대응되는 엘리먼트로 XCodT 클래스 이동 (on 처리)
-        // TODO 가로사이즈는 innerWidth로 직접 잡거나, innerWidth를 캐싱해두고 사용
+  proto.click = function() {
+    // TODO $left/$right 화살표 숨김/표시 (필요한 로직 추가)
+    // TODO this.$slider.style.transform = `translateX(${이동좌표}px)`;
+    // TODO $pagebar 이미지에 대응되는 엘리먼트로 XCodT 클래스 이동 (on 처리)
+    // TODO 가로사이즈는 innerWidth로 직접 잡거나, innerWidth를 캐싱해두고 사용
+  };
+  proto.resize = function() {
+    // HACK 현재 데이터바인딩을 지원하지 않으므로, 리스트 모든 엘리먼트 지우고 새로 렌더링
+    while (this.$sliderList.firstChild) {
+      this.$sliderList.removeChild(this.$sliderList.firstChild);
     }
-    proto.resize = function() {
-        // HACK 현재 데이터바인딩을 지원하지 않으므로, 리스트 모든 엘리먼트 지우고 새로 렌더링
-        while(this.$sliderList.firstChild) {
-            this.$sliderList.removeChild(this.$sliderList.firstChild);
-        }
-        this.$sliderList.insertAdjacentHTML('beforeend', `
+    this.$sliderList.insertAdjacentHTML(
+      "beforeend",
+      `
             ${this.htmlSliderImgs(this._dataList)}
-        `);
-        // TODO 리프레시 전 슬라이드 이미지 다시 노출 (좌표보정)
-        // TODO 가로사이즈는 innerWidth로 직접 잡거나, innerWidth를 캐싱해두고 사용
-    }
+        `
+    );
+    // TODO 리프레시 전 슬라이드 이미지 다시 노출 (좌표보정)
+    // TODO 가로사이즈는 innerWidth로 직접 잡거나, innerWidth를 캐싱해두고 사용
+  };
 
-    proto.htmlSliderImgs = function(imgDataList) {
-        const imgs = imgDataList.reduce((html, img) => {
-            html += `
+  proto.htmlSliderImgs = function(imgDataList) {
+    const imgs = imgDataList.reduce((html, img) => {
+      html += `
                 <li class="_-1_m6" style="opacity: 1; width: ${innerWidth}px;">
                     <div class="bsGjF" style="margin-left: 0px; width: ${innerWidth}px;">
                         <div class="Igw0E IwRSH eGOV_ _4EzTm" style="width: ${innerWidth}px;">
@@ -228,28 +246,36 @@ const Item = (() => {
                     </div>
                 </li>
             `;
-            return html;
-        }, '');
-        return imgs;
-    }
-    proto.render = function(data, profileData) {
-        const navs = this._dataList.reduce((html, img, index) => {
-            const on = index === 0 ? 'XCodT' : '';
-            html += `
+      return html;
+    }, "");
+    return imgs;
+  };
+  proto.render = function(data, profileData) {
+    const navs = this._dataList.reduce((html, img, index) => {
+      const on = index === 0 ? "XCodT" : "";
+      html += `
                 <div class="Yi5aA ${on}"></div>
             `;
-            return html;
-        }, '');
-        this.$parent.insertAdjacentHTML('afterbegin', `
+      return html;
+    }, "");
+    this.$parent.insertAdjacentHTML(
+      "afterbegin",
+      `
             <article class="QBXjJ M9sTE h0YNM SgTZ1 Tgarh">
                 <header class="Ppjfr UE9AK wdOqh">
                     <div class="RR-M- h5uC0 mrq0Z" role="button" tabindex="0">
                         <canvas class="CfWVH" height="126" width="126" style="position: absolute; top: -5px; left: -5px; width: 42px; height: 42px;"></canvas>
-                        <span class="_2dbep" role="link" tabindex="0" style="width: 32px; height: 32px;"><img alt="${profileData.name}님의 프로필 사진" class="_6q-tv" src="${common.IMG_PATH}${profileData.img}"></span>
+                        <span class="_2dbep" role="link" tabindex="0" style="width: 32px; height: 32px;"><img alt="${
+                          profileData.name
+                        }님의 프로필 사진" class="_6q-tv" src="${
+        common.IMG_PATH
+      }${profileData.img}"></span>
                     </div>
                     <div class="o-MQd">
                         <div class="e1e1d">
-                            <h2 class="BrX75"><a class="FPmhX notranslate nJAzx" title="${profileData.name}" href="javascript:;">${profileData.name}</a></h2>
+                            <h2 class="BrX75"><a class="FPmhX notranslate nJAzx" title="${
+                              profileData.name
+                            }" href="javascript:;">${profileData.name}</a></h2>
                         </div>
                     </div>
                 </header>
@@ -263,7 +289,9 @@ const Item = (() => {
                                         <div class="js-slider MreMs" tabindex="0" style="transition-duration: 0.25s; transform: translateX(0px);">
                                             <div class="qqm6D">
                                                 <ul class="YlNGR" style="padding-left: 0px; padding-right: 0px;">
-                                                    ${this.htmlSliderImgs(this._dataList)}
+                                                    ${this.htmlSliderImgs(
+                                                      this._dataList
+                                                    )}
                                                 </ul>
                                             </div>
                                         </div>
@@ -291,7 +319,9 @@ const Item = (() => {
                     </section>
                     <section class="EDfFK ygqzn">
                         <div class=" Igw0E IwRSH eGOV_ ybXk5 vwCYk">
-                            <div class="Nm9Fw"><a class="zV_Nj" href="javascript:;">좋아요 <span>${data.clipCount}</span>개</a></div>
+                            <div class="Nm9Fw"><a class="zV_Nj" href="javascript:;">좋아요 <span>${
+                              data.clipCount
+                            }</span>개</a></div>
                         </div>
                     </section>
                     <div class="KlCQn EtaWk">
@@ -301,7 +331,11 @@ const Item = (() => {
                                     <div class="P9YgZ">
                                         <div class="C7I1f X7jCj">
                                             <div class="C4VMK">
-                                                <h2 class="_6lAjh"><a class="FPmhX notranslate TlrDj" title="${profileData.name}" href="javascript:;">${profileData.name}</a></h2>
+                                                <h2 class="_6lAjh"><a class="FPmhX notranslate TlrDj" title="${
+                                                  profileData.name
+                                                }" href="javascript:;">${
+        profileData.name
+      }</a></h2>
                                                 <span>${data.text}</span>
                                             </div>
                                         </div>
@@ -309,7 +343,9 @@ const Item = (() => {
                                 </li>
                             </div>
                             <li class="lnrre">
-                                <button class="Z4IfV sqdOP yWX7d y3zKF" type="button">댓글 <span>${data.commentCount}</span>개 모두 보기</button>
+                                <button class="Z4IfV sqdOP yWX7d y3zKF" type="button">댓글 <span>${
+                                  data.commentCount
+                                }</span>개 모두 보기</button>
                             </li>
                         </ul>
                     </div>
@@ -321,55 +357,58 @@ const Item = (() => {
                     <button class="dCJp8 afkep"><span aria-label="옵션 더 보기" class="glyphsSpriteMore_horizontal__outline__24__grey_9 u-__7"></span></button>
                 </div>
             </article>
-        `);
-    }
+        `
+    );
+  };
 
-    return Item;
+  return Item;
 })();
 
 const Detail = (() => {
-    const Detail = function($parent, detailDataList = []) {
-        this.$parent = $parent;
-        this._dataListTemp = detailDataList;
-        this.$elList = [];
-        this._dataList = [];
-    };
-    const proto = Detail.prototype;
+  const Detail = function($parent, detailDataList = []) {
+    this.$parent = $parent;
+    this._dataListTemp = detailDataList;
+    this.$elList = [];
+    this._dataList = [];
+  };
+  const proto = Detail.prototype;
 
-    proto.create = function() {
-    }
-    proto.destroy = function() {
-        this.$elList.forEach($el => this.$parent.removeChild($el));
-    }
+  proto.create = function() {};
+  proto.destroy = function() {
+    this.$elList.forEach($el => this.$parent.removeChild($el));
+  };
 
-    proto.addImg = function() {
-        return new Promise(resolve => {
-            const detailData = this._dataListTemp.shift();
-            if(!detailData) {
-                resolve({ hasNext: false });
-            }
+  proto.addImg = function() {
+    return new Promise(resolve => {
+      const detailData = this._dataListTemp.shift();
+      if (!detailData) {
+        resolve({ hasNext: false });
+      }
 
-            this.render(detailData);
-            const $el = this.$parent.lastElementChild;
-            this.$elList.push($el);
-            this._dataList.push(detailData);
+      this.render(detailData);
+      const $el = this.$parent.lastElementChild;
+      this.$elList.push($el);
+      this._dataList.push(detailData);
 
-            $el.querySelector('img').onload = (e) => {
-                resolve({ hasNext: this._dataListTemp.length > 0 });
-            }
-        });
-    }
+      $el.querySelector("img").onload = e => {
+        resolve({ hasNext: this._dataListTemp.length > 0 });
+      };
+    });
+  };
 
-    proto.render = function(img) {
-        this.$parent.insertAdjacentHTML('beforeend', `
+  proto.render = function(img) {
+    this.$parent.insertAdjacentHTML(
+      "beforeend",
+      `
             <article class="M9sTE h0YNM SgTZ1">
                 <img style="width: 100%; height: auto;" src="${common.IMG_PATH}${img}">
             </article>
-        `);
-    }
+        `
+    );
+  };
 
-    return Detail;
+  return Detail;
 })();
 
-const root = new Root('main');
+const root = new Root("main");
 root.create();
