@@ -90,6 +90,11 @@ const AutoPageTurner = (() => {
 })();
 
 // ImageSlider 객체 생성
+/* FIXME 데이터의 흐름, DOM구조와 로직 흐름 중심으로 메소드 리팩토링 해주세요
+현재는 객체와 메소드라고 보기 어렵고, 절차지향 로직에 순서대로 이름만 붙여 묶은 상태입니다
+현재 작성된 메소드 모두 없애고, 하나의 절차지향 로직으로 아예 롤백해서 합친 후
+(또는 실제 코드가 아니라, 플로우차트 등 "눈에 보이는" 그림으로 따로 정리해보고)
+로직의 흐름을 처음부터 다시 살펴보는 게 좋을 것 같습니다 */
 const ImageSlider = (() => {
   const ImageSlider = function($left, $right, $imageSlider, $pagebar) {
     this.$left = $left;
@@ -101,32 +106,42 @@ const ImageSlider = (() => {
   };
   const proto = ImageSlider.prototype;
 
+  /* FIXME left/right 로직이 따로 있을 필요가 없어 보입니다
+  좌/우 반복로직 통합하고, 메소드 구조를 처음부터 다시 설계 해주세요 */
   proto.slideLeft = function() {
     this.beforeSlide();
+    /* FIXME String 조작/조합해서 무언가를 만들어 사용하지 마세요 */
     const px = Number(
       this.$imageSlider.style.transform.slice(
         11,
         this.$imageSlider.style.transform.length - 3
       )
     );
+    /* FIXME 화면조작 로직과 비즈니스 로직은 분리 해주세요 */
     this.$imageSlider.style.transform = `translateX(${px + innerWidth}px)`;
     this.afterSlideLeft();
   };
   proto.slideRight = function() {
     this.beforeSlide();
+    /* FIXME String 조작/조합해서 무언가를 만들어 사용하지 마세요 */
     const px = Number(
       this.$imageSlider.style.transform.slice(
         11,
         this.$imageSlider.style.transform.length - 3
       )
     );
+    /* FIXME 화면조작 로직과 비즈니스 로직은 분리 해주세요 */
     this.$imageSlider.style.transform = `translateX(${px - innerWidth}px)`;
     this.afterSlideRight();
   };
   proto.beforeSlide = function() {
+    /* FIXME adjustResizing 메소드에서 유사 반복로직 있습니다 */
     this.$imageSlider.style["transition-duration"] = "0.25s";
   };
+  /* FIXME left/right 로직이 따로 있을 필요가 없어 보입니다
+  좌/우 반복로직 통합하고, 메소드 구조를 처음부터 다시 설계 해주세요 */
   proto.afterSlideLeft = function() {
+    /* FIXME 화면조작 로직과 비즈니스 로직은 분리 해주세요 */
     this.$pagebar.children[this.numberOfShown - 1].classList.remove("XCodT");
     this.$pagebar.children[this.numberOfShown - 2].classList.add("XCodT");
     this.numberOfShown -= 1;
@@ -136,6 +151,7 @@ const ImageSlider = (() => {
     }
   };
   proto.afterSlideRight = function() {
+    /* FIXME 화면조작 로직과 비즈니스 로직은 분리 해주세요 */
     this.$pagebar.children[this.numberOfShown - 1].classList.remove("XCodT");
     this.$pagebar.children[this.numberOfShown].classList.add("XCodT");
     this.numberOfShown += 1;
@@ -147,6 +163,9 @@ const ImageSlider = (() => {
   // 화면 리사이즈 시, 이미지 슬라이더의 이미지 위치 보정 처리
   proto.adjustResizing = function() {
     // 리사이즈 시, 슬라이드의 이미지 흔들림 방지 위해 transition-duration 0으로 설정(슬라이드 버튼 누를 경우 0.25s로 복원)
+    /* TODO 복원시점을 리사이징 직후로 잡아주는 게 더 좋을 것 같습니다
+    transition-duration 조작 주체는 adjustResizing 메소드 입니다
+    콜백큐에 즉시 적재하는 방법도 고려해볼 수 있을 것 같습니다 */
     this.$imageSlider.style["transition-duration"] = "0s";
     this.$imageSlider.style.transform = `translateX(${-innerWidth *
       (this.numberOfShown - 1)}px)`;
@@ -275,8 +294,18 @@ const Item = (() => {
     this.$parent.removeChild(this.$el);
   };
 
+  /* FIXME click, resize 이벤트 수행주체는 슬라이더가 됩니다
+  (당연히 연관된 이벤트 add/remove 등 관련로직도 따라 들어가야 합니다)
+  객체의 역할과 책임에 맞게 리팩토링하면 좋을 것 같습니다 */
   proto.click = function(e) {
-    const direction = e.target.dataset.direction;
+      const direction = e.target.dataset.direction;
+      /* BUG 내부div의 바깥 버튼영역 클릭시 작동하지 않습니다
+      절대로 String 조작/조합해서 무언가를 만들어 사용하지 마세요
+      이런 스타일의 코드가 조금씩 기출변형만 되어 계속 반복되고 있는데
+      유지보수성이 극도로 떨어지고 버그유발 가능성이 매우 높습니다
+      대표적인 기술부채이며, 스파게티 코드의 시작점입니다 */
+      /* TODO API로 노출할만한 메소드가 아닌 것 같습니다
+      슬라이더 객체 안에서 로직 수행 해주세요 */
     this._imageSlider[`slide${direction}`]();
   };
   proto.resize = function() {
@@ -289,6 +318,8 @@ const Item = (() => {
               ${this.htmlSliderImgs(this._dataList)}
           `
     );
+    /* TODO API로 노출할만한 메소드가 아닌 것 같습니다
+    슬라이더 객체 안에서 로직 수행 해주세요 */
     this._imageSlider.adjustResizing();
   };
 
